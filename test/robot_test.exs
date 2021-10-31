@@ -3,6 +3,28 @@ defmodule RobotTest do
   doctest Robot
   alias Robot.Models.Point
 
+  describe "Subscriptions" do
+    test "Should receive `:robot_position_changed` when a subscriptor exists" do
+      {:ok, pid} = Robot.start(self())
+
+      Robot.move(pid, "URDL")
+
+      Robot.stop(pid)
+
+      assert_receive({:robot_position_changed, _position}, 100)
+    end
+
+    test "Shouldn't receive `:robot_position_changed` when a subscriptor doesnt exists" do
+      {:ok, pid} = Robot.start()
+
+      Robot.move(pid, "URDL")
+
+      Robot.stop(pid)
+
+      refute_receive({:robot_position_changed, _position}, 100)
+    end
+  end
+
   describe "Within limits" do
     test "Command `UUU` should return `%Point{x: 0, y: 3}`" do
       {:ok, pid} = Robot.start()
@@ -106,7 +128,7 @@ defmodule RobotTest do
     @tag :concurrency
     test "Should run 262,000 stream processes in parallel to test concurrency" do
       tasks = Task.async_stream(0..262_000, fn _ ->
-        {:ok, pid} = Robot.start()
+        {:ok, pid} = Robot.start(self())
 
         Robot.move(pid, "RRR")
         Robot.move(pid, "UUU")
@@ -117,7 +139,9 @@ defmodule RobotTest do
 
         point = Robot.get(pid)
 
-        assert point == %Point{x: -4, y: -4}
+        assert_receive({:robot_position_changed, _position}, 100)
+
+        assert %Point{x: -4, y: -4, subscribers: _} = point
       end)
       |> Enum.into([], fn {:ok, res} -> res end)
 

@@ -12,6 +12,8 @@ defmodule Robot do
     For more details, see `Robot.setBounds/2`.
   """
 
+  @robot_position_changed_payload :robot_position_changed
+
   alias Robot.Models.Point
 
   ## API
@@ -26,8 +28,9 @@ defmodule Robot do
       iex> {:ok, _pid} = Robot.start()
 
   """
-  @spec start() :: {:ok, pid()}
-  def start, do: Agent.start_link(fn -> %Point{} end)
+  @spec start(pid()) :: {:ok, pid()}
+  def start(caller), do: Agent.start_link(fn -> %Point{subscribers: [caller]} end)
+  def start(), do: Agent.start_link(fn -> %Point{} end)
 
   @doc """
   Stop a Robot process.
@@ -100,18 +103,30 @@ defmodule Robot do
 
   defp update_movement(["U" | tail], pid) do
     Agent.update(pid, &(Map.put(&1, :y, (&1.y + 1) |> adjust_point(&1.bounds.y))))
+
+    pid |> get() |> send_message_robot_moved()
+
     update_movement(tail, pid)
   end
   defp update_movement(["D" | tail], pid) do
     Agent.update(pid, &(Map.put(&1, :y, (&1.y - 1) |> adjust_point(&1.bounds.y))))
+
+    pid |> get() |> send_message_robot_moved()
+
     update_movement(tail, pid)
   end
   defp update_movement(["L" | tail], pid) do
     Agent.update(pid, &(Map.put(&1, :x, (&1.x - 1) |> adjust_point(&1.bounds.x))))
+
+    pid |> get() |> send_message_robot_moved()
+
     update_movement(tail, pid)
   end
   defp update_movement(["R" | tail], pid) do
     Agent.update(pid, &(Map.put(&1, :x, (&1.x + 1) |> adjust_point(&1.bounds.x))))
+
+    pid |> get() |> send_message_robot_moved()
+
     update_movement(tail, pid)
   end
   defp update_movement(_, _pid), do: :ok
@@ -120,4 +135,10 @@ defmodule Robot do
   defp adjust_point(_value, bounds), do: (bounds * -1)
 
   defp split_command(command), do: String.split(command, "", trim: true)
+
+  defp send_message_robot_moved(%Point{subscribers: []}), do: :ok
+  defp send_message_robot_moved(%Point{subscribers: subscribers, x: x, y: y}) do
+    for pid <- subscribers, do: send(pid, {@robot_position_changed_payload, %{x: x, y: y}})
+    :ok
+  end
 end

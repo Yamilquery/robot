@@ -8,42 +8,86 @@ If the robot exceeds the established limits it will travel to the negative limit
 
 The maximum position by default is set to 5, but it can be changed. For more details, see [`Robot.setBounds/2`](https://hexdocs.pm/robot/0.1.0/Robot.html#setBounds/2).
 
-# [Summary](https://hexdocs.pm/robot/0.1.0/Robot.html#summary)
+# Getting Started
 
-## [Functions](https://hexdocs.pm/robot/0.1.0/Robot.html#functions)
+A real life example:
 
-[get(pid)](https://hexdocs.pm/robot/0.1.0/Robot.html#get/1)
+```
+# Initialize a Robot process.
+iex(1)> {:ok, pid} = Robot.start(self())
+
+
+# Change the default Robot bounds by x: 3 and y: 6.
+iex(2)> :ok = Robot.setBounds(pid, {3, 6})
+
+
+# Move the Robot.
+iex(3)> :ok = Robot.move(pid, "RRRRUUUUUUU")
+
+
+# Receive the next Robot's move.
+iex(4)> %{x: 1, y: 0} = receive do {:robot_position_changed, position} -> position end
+
+
+# Get the current Robot position.
+iex(5)> %Robot.Models.Point{
+  bounds: %{x: 3, y: 6},
+  subscribers: [_caller_pid],
+  x: -3,
+  y: -6
+} = Robot.get(pid)
+
+
+# Stop the Robot process.
+iex(6)> :ok = Robot.stop(pid)
+
+```
+
+
+
+# [Summary](https://hexdocs.pm/robot/0.1.1/Robot.html#summary)
+
+## [Functions](https://hexdocs.pm/robot/0.1.1/Robot.html#functions)
+
+[get(pid)](https://hexdocs.pm/robot/0.1.1/Robot.html#get/1)
 
 Get the current position of the Robot.
 
-[move(pid, command)](https://hexdocs.pm/robot/0.1.0/Robot.html#move/2)
+[move(pid, command)](https://hexdocs.pm/robot/0.1.1/Robot.html#move/2)
 
 Move the Robot to the desired location according to the given commands.
 
-[setBounds(pid, arg)](https://hexdocs.pm/robot/0.1.0/Robot.html#setBounds/2)
+[setBounds(pid, arg)](https://hexdocs.pm/robot/0.1.1/Robot.html#setBounds/2)
 
 Change the Robot bounds by a given tuple `{x, y}`.
 
-[start()](https://hexdocs.pm/robot/0.1.0/Robot.html#start/0)
+[start()](https://hexdocs.pm/robot/0.1.1/Robot.html#start/0)
+
+[start(caller)](https://hexdocs.pm/robot/0.1.1/Robot.html#start/1)
 
 Initialize a Robot process.
 
-[stop(pid)](https://hexdocs.pm/robot/0.1.0/Robot.html#stop/1)
+[stop(pid)](https://hexdocs.pm/robot/0.1.1/Robot.html#stop/1)
 
 Stop a Robot process.
 
-# [Functions](https://hexdocs.pm/robot/0.1.0/Robot.html#functions)
+# [Functions](https://hexdocs.pm/robot/0.1.1/Robot.html#functions)
 
-[Link to this function](https://hexdocs.pm/robot/0.1.0/Robot.html#get/1)
+[Link to this function](https://hexdocs.pm/robot/0.1.1/Robot.html#get/1)
 
 # get(pid)
 
-[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L96)
+[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L99)
 
 ## Specs
 
 ```
-get(pid()) :: %Robot.Models.Point{bounds: term(), x: term(), y: term()}
+get(pid()) :: %Robot.Models.Point{
+  bounds: term(),
+  subscribers: term(),
+  x: term(),
+  y: term()
+}
 ```
 
 Get the current position of the Robot.
@@ -58,11 +102,11 @@ iex> Robot.get(pid)
 %Robot.Models.Point{x: 0, y: 0}
 ```
 
-[Link to this function](https://hexdocs.pm/robot/0.1.0/Robot.html#move/2)
+[Link to this function](https://hexdocs.pm/robot/0.1.1/Robot.html#move/2)
 
 # move(pid, command)
 
-[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L75)
+[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L78)
 
 ## Specs
 
@@ -82,11 +126,11 @@ iex> Robot.move(pid, "UUUDR")
 :ok
 ```
 
-[Link to this function](https://hexdocs.pm/robot/0.1.0/Robot.html#setBounds/2)
+[Link to this function](https://hexdocs.pm/robot/0.1.1/Robot.html#setBounds/2)
 
 # setBounds(pid, arg)
 
-[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L60)
+[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L63)
 
 ## Specs
 
@@ -106,16 +150,24 @@ iex> :ok = Robot.setBounds(pid, {10, 10})
 :ok
 ```
 
-[Link to this function](https://hexdocs.pm/robot/0.1.0/Robot.html#start/0)
+[Link to this function](https://hexdocs.pm/robot/0.1.1/Robot.html#start/0)
 
 # start()
 
-[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L30)
+[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L33)
+
+
+
+[Link to this function](https://hexdocs.pm/robot/0.1.1/Robot.html#start/1)
+
+# start(caller)
+
+[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L32)
 
 ## Specs
 
 ```
-start() :: {:ok, pid()}
+start(pid()) :: {:ok, pid()}
 ```
 
 Initialize a Robot process.
@@ -126,13 +178,16 @@ Returns `{:ok, #PID<0.162.0>}`.
 
 ```
 iex> {:ok, _pid} = Robot.start()
+
+# With a subscriber
+iex> {:ok, _pid} = Robot.start(self())
 ```
 
-[Link to this function](https://hexdocs.pm/robot/0.1.0/Robot.html#stop/1)
+[Link to this function](https://hexdocs.pm/robot/0.1.1/Robot.html#stop/1)
 
 # stop(pid)
 
-[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L45)
+[View Source](https://github.com/Yamilquery/robot/blob/master/lib/robot.ex#L48)
 
 ## Specs
 

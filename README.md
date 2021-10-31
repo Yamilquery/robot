@@ -182,3 +182,11 @@ To test with concurrency tests, run:
 ```elixir
   mix test --include concurrency
 ```
+
+# Author
+
+Yamil Díaz Aguirre
+
+https://github.com/Yamilquery
+
+yamilquery@gmail.com

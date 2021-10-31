@@ -1,57 +1,123 @@
 defmodule Robot do
-  @moduledoc false
+  @moduledoc """
+    Given a robot which can only move in four directions, UP(U), DOWN(D), LEFT(L), RIGHT(R).
+
+    Given a string consisting of instructions to move. Output the coordinates of a robot
+    after executing the instructions. Initial position of robot is at origin(0, 0).
+
+    If the robot exceeds the established limits it will travel to the negative limit of
+    the maximum position.
+
+    The maximum position by default is set to 5, but it can be changed.
+    For more details, see `Robot.setBounds/2`.
+  """
 
   alias Robot.Models.Point
-
-  @limit 5
 
   ## API
 
   @doc """
-    Initialize a Robot process
+  Initialize a Robot process.
+
+  Returns `{:ok, #PID<0.162.0>}`.
+
+  ## Examples
+
+      iex> {:ok, _pid} = Robot.start()
+
   """
-  @spec new() :: {:ok, pid()}
-  def new, do: Agent.start_link(fn -> %Point{} end)
+  @spec start() :: {:ok, pid()}
+  def start, do: Agent.start_link(fn -> %Point{} end)
 
   @doc """
-    Move the robot to the desired location according to the given commands.
+  Stop a Robot process.
+
+  Returns `:ok`.
+
+  ## Examples
+
+      iex> {:ok, pid} = Robot.start()
+      iex> :ok = Robot.stop(pid)
+      :ok
+
+  """
+  @spec stop(pid()) :: :ok
+  def stop(pid), do: Agent.stop(pid)
+
+  @doc """
+  Change the Robot bounds by a given tuple `{x, y}`.
+
+  Returns `:ok`.
+
+  ## Examples
+
+      iex> {:ok, pid} = Robot.start()
+      iex> :ok = Robot.setBounds(pid, {10, 10})
+      :ok
+
+  """
+  @spec setBounds(pid(), tuple()) :: :ok
+  def setBounds(pid, {x, y}), do: Agent.update(pid, &(Map.put(&1, :bounds, %{x: x, y: y})))
+
+  @doc """
+  Move the Robot to the desired location according to the given commands.
+
+  Returns `:ok`.
+
+  ## Examples
+
+      iex> {:ok, pid} = Robot.start()
+      iex> Robot.move(pid, "UUUDR")
+      :ok
+
   """
   @spec move(pid(), String.t()) :: :ok
   def move(pid, command) when is_binary(command) do
-    :ok = command
-    |> split_command()
-    |> update_movement(pid)
+    :ok =
+      command
+      |> split_command()
+      |> update_movement(pid)
   end
   def move(_pid, _command), do: :ok
 
   @doc """
-    Get the current location of the Robot.
+  Get the current position of the Robot.
+
+  Returns `%Robot.Models.Point{}`.
+
+  ## Examples
+
+      iex> {:ok, pid} = Robot.start()
+      iex> Robot.get(pid)
+      %Robot.Models.Point{x: 0, y: 0}
+
   """
   @spec get(pid()) :: %Point{}
   def get(pid), do: Agent.get(pid, &(&1))
 
+
   ## private helpers
 
   defp update_movement(["U" | tail], pid) do
-    Agent.update(pid, &(Map.put(&1, :y, (Map.get(&1, :y) + 1) |> adjust_point())))
+    Agent.update(pid, &(Map.put(&1, :y, (&1.y + 1) |> adjust_point(&1.bounds.y))))
     update_movement(tail, pid)
   end
   defp update_movement(["D" | tail], pid) do
-    Agent.update(pid, &(Map.put(&1, :y, (Map.get(&1, :y) - 1) |> adjust_point())))
+    Agent.update(pid, &(Map.put(&1, :y, (&1.y - 1) |> adjust_point(&1.bounds.y))))
     update_movement(tail, pid)
   end
   defp update_movement(["L" | tail], pid) do
-    Agent.update(pid, &(Map.put(&1, :x, (Map.get(&1, :x) - 1) |> adjust_point())))
+    Agent.update(pid, &(Map.put(&1, :x, (&1.x - 1) |> adjust_point(&1.bounds.x))))
     update_movement(tail, pid)
   end
   defp update_movement(["R" | tail], pid) do
-    Agent.update(pid, &(Map.put(&1, :x, (Map.get(&1, :x) + 1) |> adjust_point())))
+    Agent.update(pid, &(Map.put(&1, :x, (&1.x + 1) |> adjust_point(&1.bounds.x))))
     update_movement(tail, pid)
   end
   defp update_movement(_, _pid), do: :ok
 
-  defp adjust_point(value) when (value >= (@limit * -1) and value <= @limit), do: value
-  defp adjust_point(_value), do: (@limit * -1)
+  defp adjust_point(value, bounds) when (value >= (bounds * -1) and value <= bounds), do: value
+  defp adjust_point(_value, bounds), do: (bounds * -1)
 
   defp split_command(command), do: String.split(command, "", trim: true)
 end
